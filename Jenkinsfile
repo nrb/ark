@@ -2,6 +2,11 @@
 pipeline {
     agent any
 
+    options {
+        buildDiscarder(logRotator(numToKeepStr:'20'))
+        timestamps()
+    }
+
     parameters {
         string(name: 'UPLOAD_IMAGE', defaultValue: "False", description: "Should this build upload the Docker image?")
     }
