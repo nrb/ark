@@ -18,11 +18,6 @@ pipeline {
             }
         }
         stage("Build container") {
-            when {
-                not {
-                    params.UPLOAD_IMAGE  == "False"
-                }
-            }
             steps {
                 sh 'make container'
             }
