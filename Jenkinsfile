@@ -16,7 +16,7 @@ pipeline {
         stage("Build container") {
             when {
                 // Only do release actions on branchs that explicitly label themselves as release branches
-                env.BRANCH_NAME.startsWith('release-')
+                branch.contains('release-')
             }
             steps {
                 sh 'make container'
