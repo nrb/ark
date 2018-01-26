@@ -18,6 +18,9 @@ pipeline {
             }
         }
         stage("Build container") {
+            when {
+                expression { params.UPLOAD_IMAGE == "true" }
+            }
             steps {
                 sh 'make container'
             }
