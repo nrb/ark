@@ -2,6 +2,10 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'UPLOAD_IMAGE', defaultValue: "False", description: "Should this build upload the Docker image?"
+    }
+
     stages {
         stage("Test") {
             steps {
@@ -15,8 +19,9 @@ pipeline {
         }
         stage("Build container") {
             when {
-                // Only do release actions on branchs that explicitly label themselves as release branches
-                branch.contains('release-')
+                not {
+                    params.UPLOAD_IMAGE == "False"
+                }
             }
             steps {
                 sh 'make container'
