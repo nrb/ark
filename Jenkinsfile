@@ -3,6 +3,7 @@ pipeline {
     agent any
 
     options {
+        buildDiscarder(logRotator(numToKeepStr:'20'))
         timestamps()
     }
 
