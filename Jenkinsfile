@@ -12,9 +12,6 @@ pipeline {
     }
 
     stages {
-        stage("Clean workspace") {
-            deleteDir()
-        }
         stage("Test") {
             steps {
                 sh 'make test'
@@ -32,6 +29,11 @@ pipeline {
             steps {
                 sh 'make container'
             }
+        }
+    }
+    post {
+        always {
+            deleteDir()
         }
     }
 }
