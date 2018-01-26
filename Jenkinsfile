@@ -30,6 +30,11 @@ pipeline {
                 sh 'make container'
             }
         }
+        stage("Upload image") {
+            steps {
+                echo "TODO"
+            }
+        }
     }
     post {
         always {
