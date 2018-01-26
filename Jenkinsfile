@@ -7,9 +7,14 @@ pipeline {
                 sh 'make test'
             }
         }
-        stage("Build") {
+        stage("Build executables") {
             steps {
-                sh 'make'
+                sh 'make all'
+            }
+        }
+        stage("Build container") {
+            steps {
+                sh 'make container'
             }
         }
     }
