@@ -12,6 +12,9 @@ pipeline {
     }
 
     stages {
+        stage("Clean workspace") {
+            deleteDir()
+        }
         stage("Test") {
             steps {
                 sh 'make test'
