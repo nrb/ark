@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/jsonmergepatch"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -642,6 +643,21 @@ func (ctx *context) restoreResource(resource, namespace, resourcePath string) (a
 		ctx.infof("Restoring %s: %v", obj.GroupVersionKind().Kind, obj.GetName())
 		_, err = resourceClient.Create(obj)
 		if apierrors.IsAlreadyExists(err) {
+			if obj.GroupVersionKind().Kind == "ServiceAccount" {
+				fmt.Println("Found service account, needs patching")
+				fmt.Println(obj)
+				currentObj, _ := resourceClient.Get(obj.GetName(), metav1.GetOptions{})
+				fmt.Println("---")
+				fmt.Println(currentObj)
+				backedupBytes, _ := json.Marshal(obj)
+				currentBytes, _ := json.Marshal(currentObj)
+				patchBytes, _ := jsonmergepatch.CreateThreeWayJSONMergePatch(nil, backedupBytes, currentBytes)
+				fmt.Println("-- patched --")
+				var holder interface{}
+				_ = json.Unmarshal(patchBytes, &holder)
+				fmt.Println(holder)
+				fmt.Println("----")
+			}
 			addToResult(&warnings, namespace, err)
 			continue
 		}
