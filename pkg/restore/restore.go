@@ -644,18 +644,37 @@ func (ctx *context) restoreResource(resource, namespace, resourcePath string) (a
 		_, err = resourceClient.Create(obj)
 		if apierrors.IsAlreadyExists(err) {
 			if obj.GroupVersionKind().Kind == "ServiceAccount" {
-				fmt.Println("Found service account, needs patching")
+				fmt.Println(obj.Object["secrets"])
+				for _, secret := range obj.Object["secrets"].([]interface{}) {
+					fmt.Println(secret)
+					for k, v := range secret.(map[string]interface{}) {
+						if strings.HasPrefix(v.(string), "default-token-") {
+							delete(secret.(map[string]interface{}), k)
+						}
+					}
+				}
 				fmt.Println(obj)
 				currentObj, _ := resourceClient.Get(obj.GetName(), metav1.GetOptions{})
-				fmt.Println("---")
-				fmt.Println(currentObj)
 				backedupBytes, _ := json.Marshal(obj)
 				currentBytes, _ := json.Marshal(currentObj)
 				patchBytes, _ := jsonmergepatch.CreateThreeWayJSONMergePatch(nil, backedupBytes, currentBytes)
-				fmt.Println("-- patched --")
-				var holder interface{}
-				_ = json.Unmarshal(patchBytes, &holder)
-				fmt.Println(holder)
+				otherBytes, _ := jsonmergepatch.CreateThreeWayJSONMergePatch(currentBytes, backedupBytes, nil)
+				lastBytes, _ := jsonmergepatch.CreateThreeWayJSONMergePatch(currentBytes, backedupBytes, currentBytes)
+				weirdBytes, _ := jsonmergepatch.CreateThreeWayJSONMergePatch(currentBytes, backedupBytes, backedupBytes)
+				fmt.Println("-- nil, backedupBytes, currentBytes --")
+				//var holder interface{}
+				//_ = json.Unmarshal(patchBytes, &holder)
+				//fmt.Println(holder)
+				fmt.Println(string(patchBytes))
+				fmt.Println("----")
+				fmt.Println(" -- currentBytes, backedupBytes, nil --")
+				fmt.Println(string(otherBytes))
+				fmt.Println("----")
+				fmt.Println(" -- currentBytes, backedupBytes, currentBytes --")
+				fmt.Println(string(lastBytes))
+				fmt.Println("----")
+				fmt.Println(" -- currentBytes, backedupBytes, backedupBytes --")
+				fmt.Println(string(weirdBytes))
 				fmt.Println("----")
 			}
 			addToResult(&warnings, namespace, err)
