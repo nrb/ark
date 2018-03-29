@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -642,8 +643,26 @@ func (ctx *context) restoreResource(resource, namespace, resourcePath string) (a
 		ctx.infof("Restoring %s: %v", obj.GroupVersionKind().Kind, obj.GetName())
 		_, err = resourceClient.Create(obj)
 		if apierrors.IsAlreadyExists(err) {
-			addToResult(&warnings, namespace, err)
-			continue
+			fromCluster, _ := resourceClient.Get(obj.GetName(), metav1.GetOptions{})
+			fromCluster, _ = resetMetadataAndStatus(fromCluster)
+			fromCluster.SetNamespace(namespace)
+			// Add the restore's label to the in-cluster object since we know that's different
+			addLabel(fromCluster, api.RestoreLabelKey, ctx.restore.Name)
+
+			if !equality.Semantic.DeepEqual(obj, fromCluster) {
+				fmt.Println("objects not deeply equal")
+				backupBytes, _ := json.Marshal(obj)
+				clusterBytes, _ := json.Marshal(fromCluster)
+				fmt.Println("-- Cluster --")
+				fmt.Println(string(backupBytes))
+				fmt.Println("-- Backup -- ")
+				fmt.Println(string(clusterBytes))
+				addToResult(&warnings, namespace, err)
+				continue
+			} else {
+				fmt.Println("Found same")
+				err = nil
+			}
 		}
 		if err != nil {
 			ctx.infof("error restoring %s: %v", obj.GetName(), err)
@@ -739,7 +758,12 @@ func resetMetadataAndStatus(obj *unstructured.Unstructured) (*unstructured.Unstr
 
 	for k := range metadata {
 		switch k {
-		case "name", "namespace", "labels", "annotations":
+		case "name", "labels", "annotations":
+		case "namespace":
+			if metadata[k] == "" {
+				delete(metadata, k)
+				fmt.Println("------- Cleared NS")
+			}
 		default:
 			delete(metadata, k)
 		}
@@ -748,6 +772,7 @@ func resetMetadataAndStatus(obj *unstructured.Unstructured) (*unstructured.Unstr
 	// this should never be backed up anyway, but remove it just
 	// in case.
 	delete(obj.UnstructuredContent(), "status")
+	obj.Object["metadata"] = metadata
 
 	return obj, nil
 }
