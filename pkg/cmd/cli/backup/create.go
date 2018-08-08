@@ -68,6 +68,7 @@ type CreateOptions struct {
 	Selector                flag.LabelSelector
 	IncludeClusterResources flag.OptionalBool
 	Wait                    bool
+	StorageLocation         string
 }
 
 func NewCreateOptions() *CreateOptions {
@@ -87,6 +88,7 @@ func (o *CreateOptions) BindFlags(flags *pflag.FlagSet) {
 	flags.Var(&o.IncludeResources, "include-resources", "resources to include in the backup, formatted as resource.group, such as storageclasses.storage.k8s.io (use '*' for all resources)")
 	flags.Var(&o.ExcludeResources, "exclude-resources", "resources to exclude from the backup, formatted as resource.group, such as storageclasses.storage.k8s.io")
 	flags.Var(&o.Labels, "labels", "labels to apply to the backup")
+	flags.StringVar(&o.StorageLocation, "storage-location", "default", "location in which to store the backup")
 	flags.VarP(&o.Selector, "selector", "l", "only back up resources matching this label selector")
 	f := flags.VarPF(&o.SnapshotVolumes, "snapshot-volumes", "", "take snapshots of PersistentVolumes as part of the backup")
 	// this allows the user to just specify "--snapshot-volumes" as shorthand for "--snapshot-volumes=true"
@@ -137,6 +139,7 @@ func (o *CreateOptions) Run(c *cobra.Command, f client.Factory) error {
 			SnapshotVolumes:    o.SnapshotVolumes.Value,
 			TTL:                metav1.Duration{Duration: o.TTL},
 			IncludeClusterResources: o.IncludeClusterResources.Value,
+			StorageLocation:         o.StorageLocation,
 		},
 	}
 
