@@ -61,16 +61,38 @@ git add site/docs/${NEW_DOCS_VERSION}
 # git diff of what changed since previous version
 rm -rf site/docs/${NEW_DOCS_VERSION}/ && cp -r site/docs/master/ site/docs/${NEW_DOCS_VERSION}/
 
-# replace known version-specific links -- the sed syntax is slightly different in OS X and Linux,
+# Create a new ToC document based off of master
+NEW_DOCS_TOC="$(echo ${NEW_DOCS_VERSION} | tr . -)-toc"
+echo "Generating ToC document for new version and running 'git add'"
+cp site/_data/master-toc.yml site/_data/"${NEW_DOCS_TOC}.yml"
+# git add so it's not missed
+git add site/_data/"${NEW_DOCS_TOC}.yml"
+
+# replace known version-specific information -- the sed syntax is slightly different in OS X and Linux,
 # so check which OS we're running on.
 if [[ $(uname) == "Darwin" ]]; then
     echo "[OS X] updating version-specific links"
     find site/docs/${NEW_DOCS_VERSION} -type f -name "*.md" | xargs sed -i '' "s|https://velero.io/docs/master|https://velero.io/docs/$NEW_DOCS_VERSION|g"
     find site/docs/${NEW_DOCS_VERSION} -type f -name "*.md" | xargs sed -i '' "s|https://github.com/heptio/velero/blob/master|https://github.com/heptio/velero/blob/$NEW_DOCS_VERSION|g"
+
+    echo "[OS X] Updating latest version in _config.yml"
+    sed -i '' "s/latest: ${PREVIOUS_DOCS_VERSION}/latest: ${NEW_DOCS_VERSION}/" site/_config.ymlQ
+    echo "[OS X] Adding latest version to versions list in _config.yml"
+    sed -i '' "/- master/a - ${NEW_DOCS_VERSION}" site/_config.yml
+    echo "[OS X] Adding ToC mapping entry"
+    sed -i '' "/master: master-toc/a ${NEW_DOCS_VERSION}: ${NEW_DOCS_TOC}" site/_data/toc-mapping.yml
 else
     echo "[Linux] updating version-specific links"
     find site/docs/${NEW_DOCS_VERSION} -type f -name "*.md" | xargs sed -i'' "s|https://velero.io/docs/master|https://velero.io/docs/$NEW_DOCS_VERSION|g"
     find site/docs/${NEW_DOCS_VERSION} -type f -name "*.md" | xargs sed -i'' "s|https://github.com/heptio/velero/blob/master|https://github.com/heptio/velero/blob/$NEW_DOCS_VERSION|g"
+
+    echo "[Linux] Updating latest version in _config.yml"
+    sed -i'' "s/latest: ${PREVIOUS_DOCS_VERSION}/latest: ${NEW_DOCS_VERSION}/" site/_config.ymlQ
+    echo "[Linux] Adding latest version to versions list in _config.yml"
+    sed -i'' "/- master/a - ${NEW_DOCS_VERSION}" site/_config.yml
+    echo "[Linux] Adding ToC mapping entry"
+    sed -i'' "/master: master-toc/a ${NEW_DOCS_VERSION}: ${NEW_DOCS_TOC}" site/_data/toc-mapping.yml
+
 fi
 
 echo "Success! site/docs/$NEW_DOCS_VERSION has been created. You can now run 'git diff' to review all docs changes made since the previous tagged version."
