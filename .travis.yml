@@ -9,10 +9,20 @@ sudo: required
 services:
   - docker
 
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/docker-cache
+
+before_script:
+  - docker load --input $TRAVIS_BUILD_DIR/docker-cache/velero-builder.tar || true
+
 script:
   - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$TRAVIS_PULL_REQUEST, BRANCH=$BRANCH"
   - hack/ci-check.sh
+
+before_cache:
+  - docker save velero-builder --output $TRAVIS_BUILD_DIR/docker-cache/velero-builder.tar
 
 # gcloud sdk is needed to upload docker images, but we want an updated version
 # Do this outside our script so that it's clearly separated in the logs
