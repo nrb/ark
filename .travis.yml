@@ -9,6 +9,9 @@ sudo: required
 services:
   - docker
 
+before_script:
+  - docker pull nrbvmware/velero-builder || true
+
 script:
   - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$TRAVIS_PULL_REQUEST, BRANCH=$BRANCH"
@@ -29,3 +32,4 @@ deploy:
     on:
       repo: heptio/velero
       all_branches: true
+    # add provider to push the builder image for updates

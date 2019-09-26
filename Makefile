@@ -107,7 +107,7 @@ _output/bin/$(GOOS)/$(GOARCH)/$(BIN): build-dirs
 
 TTY := $(shell tty -s && echo "-t")
 
-BUILDER_IMAGE := velero-builder
+BUILDER_IMAGE := nrbvmware/velero-builder
 
 # Example: make shell CMD="date > datefile"
 shell: build-dirs build-image
@@ -203,7 +203,7 @@ build-dirs:
 	@mkdir -p .go/src/$(PKG) .go/pkg .go/bin .go/std/$(GOOS)/$(GOARCH) .go/go-build
 
 build-image:
-	cd hack/build-image && docker build --pull -t $(BUILDER_IMAGE) .
+	cd hack/build-image && docker build --pull --cache-from $(BUILDER_IMAGE) -t $(BUILDER_IMAGE) .
 
 clean:
 	rm -rf .container-* _output/.dockerfile-* .push-*
