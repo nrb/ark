@@ -284,6 +284,8 @@ func (kr *kubernetesRestorer) Restore(
 		restoredItems:              make(map[velero.ResourceIdentifier]struct{}),
 		renamedPVs:                 make(map[string]string),
 		pvRenamer:                  kr.pvRenamer,
+		discoveryHelper:            kr.discoveryHelper,
+		resourcePriorities:         kr.resourcePriorities,
 	}
 
 	return restoreCtx.execute()
@@ -376,6 +378,8 @@ type context struct {
 	restoredItems              map[velero.ResourceIdentifier]struct{}
 	renamedPVs                 map[string]string
 	pvRenamer                  func(string) (string, error)
+	discoveryHelper            discovery.Helper
+	resourcePriorities         []string
 }
 
 type resourceClientKey struct {
@@ -452,6 +456,11 @@ func (ctx *context) execute() (Result, Result) {
 			w, e := ctx.restoreResource(resource.String(), targetNamespace, namespace, items)
 			merge(&warnings, &w)
 			merge(&errs, &e)
+		}
+
+		if resource == kuberesource.CustomResourceDefinitions {
+			ctx.discoveryHelper.Refresh()
+			ctx.prioritizedResources, _ = prioritizeResources(ctx.discoveryHelper, ctx.resourcePriorities, ctx.resourceIncludesExcludes, ctx.log)
 		}
 	}
 
